@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+html {
+  scroll-behavior: smooth;
+}
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --grid-color: rgba(229, 231, 235, 0.8);
+  --radial-color: rgba(139, 92, 246, 0.3);
+}
+
+.dark {
+  --background: oklch(0.21 0.034 264.665);
+  --foreground: oklch(0.985 0 0);
+  --grid-color: rgba(75, 85, 99, 0.2);
+  --radial-color: rgba(139, 92, 246, 0.3);
+}
+
+@theme {
+  --color-background: oklch(1 0 0);
+  --color-foreground: oklch(0.15 0 0);
+}
+
+@layer base {
+  body {
+    @apply bg-background text-foreground;
+  }
+}
