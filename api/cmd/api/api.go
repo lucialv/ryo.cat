@@ -5,9 +5,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/lucialv/ryo.cat/pkg/env"
-	store "github.com/lucialv/ryo.cat/pkg/store"
 	"github.com/lucialv/ryo.cat/internal/auth"
+	"github.com/lucialv/ryo.cat/pkg/env"
+	"github.com/lucialv/ryo.cat/pkg/storage"
+	store "github.com/lucialv/ryo.cat/pkg/store"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -18,6 +19,7 @@ import (
 type APIServer struct {
 	Config        Config
 	Store         *store.Storage
+	R2Storage     *storage.R2Storage
 	Authenticator auth.Authenticator
 }
 
@@ -27,6 +29,14 @@ type Config struct {
 	ApiURL      string
 	FrontendURL string
 	Auth        AuthConfig
+	R2          R2Config
+}
+
+type R2Config struct {
+	AccountID       string
+	AccessKeyID     string
+	AccessKeySecret string
+	BucketName      string
 }
 
 type AuthConfig struct {
@@ -45,10 +55,11 @@ type Token struct {
 	Exp    time.Duration
 }
 
-func NewAPIServer(config Config, store *store.Storage, authenticator auth.Authenticator) *APIServer {
+func NewAPIServer(config Config, store *store.Storage, r2Storage *storage.R2Storage, authenticator auth.Authenticator) *APIServer {
 	return &APIServer{
 		Config:        config,
 		Store:         store,
+		R2Storage:     r2Storage,
 		Authenticator: authenticator,
 	}
 }

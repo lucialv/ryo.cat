@@ -27,13 +27,44 @@ func makeHTTPHandleFunc(f apiFunc) http.HandlerFunc {
 func (s *APIServer) Routes() *chi.Mux {
 	r := chi.NewRouter()
 
-	// Public routes (no authentication required)
 	r.Get("/login", makeHTTPHandleFunc(s.loginHandler))
+	r.Route("/posts", func(r chi.Router) {
+		r.Get("/", makeHTTPHandleFunc(s.listPostsHandler))
+		r.Get("/{postId}", makeHTTPHandleFunc(s.getPostHandler))
+		r.Get("/user/{userId}", makeHTTPHandleFunc(s.getUserPostsHandler))
+		r.Get("/media/{mediaId}/download", makeHTTPHandleFunc(s.downloadPostMediaHandler))
 
-	// Protected routes (authentication required)
+		r.Group(func(r chi.Router) {
+			r.Use(s.AuthTokenMiddleware)
+			r.Use(s.adminOnlyMiddleware)
+			r.Post("/", makeHTTPHandleFunc(s.createPostHandler))
+			r.Delete("/{postId}", makeHTTPHandleFunc(s.deletePostHandler))
+			r.Post("/media/upload", makeHTTPHandleFunc(s.uploadPostMediaHandler))
+		})
+	})
+
 	r.Group(func(r chi.Router) {
 		r.Use(s.AuthTokenMiddleware)
 
+		r.Route("/files", func(r chi.Router) {
+			r.Post("/upload", makeHTTPHandleFunc(s.uploadFileHandler))
+			r.Get("/list", makeHTTPHandleFunc(s.listFilesHandler))
+			r.Post("/presigned-url/download", makeHTTPHandleFunc(s.generatePreSignedURLHandler))
+			r.Post("/presigned-url/upload", makeHTTPHandleFunc(s.generatePreSignedUploadURLHandler))
+			r.Route("/{key:.*}", func(r chi.Router) {
+				r.Get("/", makeHTTPHandleFunc(s.downloadFileHandler))
+				r.Delete("/", makeHTTPHandleFunc(s.deleteFileHandler))
+				r.Get("/info", makeHTTPHandleFunc(s.getFileInfoHandler))
+				r.Get("/exists", makeHTTPHandleFunc(s.fileExistsHandler))
+			})
+		})
+
+		r.Route("/profile", func(r chi.Router) {
+			r.Get("/", makeHTTPHandleFunc(s.getUserProfileHandler))
+			r.Put("/picture", makeHTTPHandleFunc(s.updateProfilePictureHandler))
+			r.Post("/picture/upload", makeHTTPHandleFunc(s.uploadProfilePictureHandler))
+			r.Delete("/picture", makeHTTPHandleFunc(s.deleteProfilePictureHandler))
+		})
 	})
 
 	return r

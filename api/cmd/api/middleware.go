@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/lucialv/ryo.cat/pkg/store"
 	u "github.com/lucialv/ryo.cat/pkg/utils"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -44,5 +45,16 @@ func (s *APIServer) AuthTokenMiddleware(next http.Handler) http.Handler {
 		}
 		ctx = context.WithValue(ctx, userCtx, user)
 		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func (s *APIServer) adminOnlyMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user := r.Context().Value(userCtx).(*store.User)
+		if !user.IsAdmin {
+			u.WriteJSON(w, http.StatusForbidden, ApiError{Error: "admin access required"})
+			return
+		}
+		next.ServeHTTP(w, r)
 	})
 }

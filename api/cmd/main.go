@@ -8,13 +8,14 @@ import (
 	"github.com/lucialv/ryo.cat/cmd/api"
 	"github.com/lucialv/ryo.cat/internal/auth"
 	"github.com/lucialv/ryo.cat/pkg/env"
+	"github.com/lucialv/ryo.cat/pkg/storage"
 	store "github.com/lucialv/ryo.cat/pkg/store"
 )
 
 func main() {
 	if os.Getenv("ENV") != "production" {
 		env.Load()
-	} 
+	}
 	cfg := api.Config{
 		Addr:        env.GetString("ADDR", ":8000"),
 		ApiURL:      env.GetString("EXTERNAL_URL", "https://api.ryo.cat"),
@@ -31,13 +32,30 @@ func main() {
 				Exp:    9 * time.Hour,
 			},
 		},
+		R2: api.R2Config{
+			AccountID:       env.GetString("ACCOUNT_ID", ""),
+			AccessKeyID:     env.GetString("ACCESS_KEY_ID", ""),
+			AccessKeySecret: env.GetString("ACCESS_KEY_SECRET", ""),
+			BucketName:      env.GetString("BUCKET_NAME", ""),
+		},
 	}
+
 	store, err := store.NewUserStore(
 		env.GetString("DB_URL", ""),
 		[]byte(env.GetString("DB_TOKEN", "meow")),
 	)
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
+	}
+
+	r2Storage, err := storage.NewR2Storage(storage.R2Config{
+		AccountID:       cfg.R2.AccountID,
+		AccessKeyID:     cfg.R2.AccessKeyID,
+		AccessKeySecret: cfg.R2.AccessKeySecret,
+		BucketName:      cfg.R2.BucketName,
+	})
+	if err != nil {
+		log.Fatalf("failed to initialize R2 storage: %v", err)
 	}
 
 	jwtAuthenticator := auth.NewJWTAuthenticator(
@@ -47,6 +65,6 @@ func main() {
 		cfg.Auth.Token.Exp,
 	)
 
-	server := api.NewAPIServer(cfg, store, jwtAuthenticator)
+	server := api.NewAPIServer(cfg, store, r2Storage, jwtAuthenticator)
 	server.Run()
 }

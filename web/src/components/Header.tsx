@@ -1,4 +1,5 @@
 import { useAuth } from "@/context/AuthContext";
+import { useProfile } from "@/hooks/useProfile";
 import ThemeToggle from "@/components/ThemeToggle.tsx";
 import { useState, useEffect, useRef } from "react";
 import { User, Settings, HelpCircle, LogOut } from "lucide-react";
@@ -10,9 +11,12 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ logoSrc }) => {
     const { user, logout } = useAuth();
+    const { data: profile } = useProfile();
     const [showDropdown, setShowDropdown] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+
+    const currentProfilePicture = profile?.profilePictureUrl || user?.profileImg;
 
     useEffect(() => {
         const handleScroll = () => {
@@ -62,30 +66,45 @@ const Header: React.FC<HeaderProps> = ({ logoSrc }) => {
                     <ThemeToggle />
                     {user ? (
                         <div className="relative" ref={dropdownRef}>
-                            <img
-                                src={user.profileImg}
-                                alt="User Avatar"
-                                className="h-10 w-10 rounded-full cursor-pointer"
-                                onClick={() => setShowDropdown(!showDropdown)}
-                            />
+                            {currentProfilePicture ? (
+                                <img
+                                    src={currentProfilePicture}
+                                    alt="User Avatar"
+                                    className="h-10 w-10 rounded-full cursor-pointer object-cover"
+                                    onClick={() => setShowDropdown(!showDropdown)}
+                                />
+                            ) : (
+                                <div
+                                    className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900 cursor-pointer flex items-center justify-center"
+                                    onClick={() => setShowDropdown(!showDropdown)}
+                                >
+                                    <User className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                                </div>
+                            )}
                             {showDropdown && (
                                 <div className="absolute right-0 mt-2 w-64 bg-white/80 dark:bg-neutral-800/80 border border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg overflow-hidden">
                                     <div className="px-4 py-3 border-b border-neutral-200 dark:border-neutral-700">
                                         <div className="flex items-center space-x-3">
                                             <div className="relative">
-                                                <img
-                                                    src={user.profileImg}
-                                                    alt="User Avatar"
-                                                    className="h-10 w-10 rounded-full"
-                                                />
+                                                {currentProfilePicture ? (
+                                                    <img
+                                                        src={currentProfilePicture}
+                                                        alt="User Avatar"
+                                                        className="h-10 w-10 rounded-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="h-10 w-10 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+                                                        <User className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                                                    </div>
+                                                )}
                                                 <div className="absolute bottom-0 right-0 h-3 w-3 bg-green-500 rounded-full border-2 border-white dark:border-neutral-800"></div>
                                             </div>
                                             <div>
                                                 <div className="font-medium text-gray-900 dark:text-white">
-                                                    {user.name}
+                                                    {profile?.name || user.name}
                                                 </div>
                                                 <div className="text-sm text-gray-500 dark:text-gray-400">
-                                                    {user.email}
+                                                    {profile?.email || user.email}
                                                 </div>
                                             </div>
                                         </div>

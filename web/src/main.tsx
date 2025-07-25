@@ -12,12 +12,12 @@ const clientId =
 
 createRoot(document.getElementById("root")!).render(
   <GoogleOAuthProvider clientId={clientId}>
-    <AuthProvider>
-      <StrictMode>
-        <QueryClientProvider client={queryClient}>
+    <StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
           <App />
-        </QueryClientProvider>
-      </StrictMode>
-    </AuthProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </StrictMode>
   </GoogleOAuthProvider>
 );
