@@ -35,4 +35,4 @@ jobs:
 
       - name: Build Web
         working-directory: ./web
-        run: bun build
+        run: bun run build
