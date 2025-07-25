@@ -1,0 +1,38 @@
+name: Build Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Build API
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - name: Build API
+        working-directory: ./api
+        run: go build ./cmd/main.go
+
+      # Build Web
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        working-directory: ./web
+        run: bun install
+
+      - name: Build Web
+        working-directory: ./web
+        run: bun build
