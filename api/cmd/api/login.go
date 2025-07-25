@@ -120,3 +120,12 @@ func (s *APIServer) loginHandler(w http.ResponseWriter, r *http.Request) error {
 	log.Printf("Unauthorized access attempt for user with sub: %s", googlePayload.Claims["sub"])
 	return u.WriteJSON(w, http.StatusUnauthorized, nil)
 }
+
+func (s *APIServer) logoutHandler(w http.ResponseWriter, r *http.Request) error {
+	s.Authenticator.ClearTokenCookie(w)
+	log.Printf("User logged out successfully")
+
+	return u.WriteJSON(w, http.StatusOK, map[string]string{
+		"message": "Logged out successfully",
+	})
+}

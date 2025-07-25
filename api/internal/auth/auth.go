@@ -10,4 +10,5 @@ type Authenticator interface {
 	GenerateToken(jwtClaims JWTClaims) (string, error)
 	ValidateToken(token string) (*jwt.Token, error)
 	SetTokenCookie(w http.ResponseWriter, jwtToken string)
+	ClearTokenCookie(w http.ResponseWriter)
 }

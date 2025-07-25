@@ -87,3 +87,25 @@ func (a *JWTAuthenticator) SetTokenCookie(w http.ResponseWriter, jwtToken string
 	}
 	http.SetCookie(w, cookie)
 }
+
+func (a *JWTAuthenticator) ClearTokenCookie(w http.ResponseWriter) {
+	isProduction := env.GetString("ENV", "development") == "production"
+
+	domain := ""
+	if isProduction {
+		domain = "ryo.cat"
+	}
+
+	cookie := &http.Cookie{
+		Name:     "ryo_session",
+		Value:    "",
+		Expires:  time.Now().Add(-time.Hour),
+		MaxAge:   -1,
+		Domain:   domain,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   isProduction,
+		SameSite: http.SameSiteLaxMode,
+	}
+	http.SetCookie(w, cookie)
+}

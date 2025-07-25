@@ -7,6 +7,7 @@ import {
 import type { ReactNode } from "react";
 import { googleLogout } from "@react-oauth/google";
 import { useQueryClient } from "@tanstack/react-query";
+import { authApi } from "@/api/auth";
 
 type User = {
     email: string;
@@ -44,7 +45,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         queryClient.invalidateQueries({ queryKey: ['profile'] });
     };
 
-    const logout = () => {
+    const logout = async () => {
+        try {
+            await authApi.logout();
+        } catch (error) {
+            console.error("Failed to logout from server:", error);
+        }
+
         googleLogout();
         sessionStorage.removeItem("user");
         setUserState(null);

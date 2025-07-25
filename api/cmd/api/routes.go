@@ -28,6 +28,7 @@ func (s *APIServer) Routes() *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Get("/login", makeHTTPHandleFunc(s.loginHandler))
+	r.Post("/logout", makeHTTPHandleFunc(s.logoutHandler))
 	r.Route("/posts", func(r chi.Router) {
 		r.Get("/", makeHTTPHandleFunc(s.listPostsHandler))
 		r.Get("/{postId}", makeHTTPHandleFunc(s.getPostHandler))
