@@ -12,6 +12,8 @@ export interface Post {
     profilePictureUrl?: string;
   };
   media: PostMedia[];
+  likeCount: number;
+  isLikedByMe: boolean;
 }
 
 export interface PostMedia {
@@ -142,6 +144,22 @@ export const postsApi = {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.Error || "Failed to upload media");
+    }
+
+    return response.json();
+  },
+
+  toggleLike: async (
+    postId: string
+  ): Promise<{ isLiked: boolean; likeCount: number }> => {
+    const response = await fetch(`${API_BASE_URL}/v1/posts/${postId}/like`, {
+      method: "POST",
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.Error || "Failed to toggle like");
     }
 
     return response.json();

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useDeletePost } from '@/hooks/usePosts';
+import { useLikePost } from '@/hooks/useLike';
 import { Trash2, User, Play, Heart } from 'lucide-react';
 import type { Post } from '@/api/posts';
 import MediaViewer from './MediaViewer';
@@ -29,8 +30,10 @@ const formatTimeAgo = (dateString: string): string => {
 const PostCard: React.FC<PostCardProps> = ({ post }) => {
     const { user } = useAuth();
     const deletePostMutation = useDeletePost();
+    const likeMutation = useLikePost();
     const [mediaViewerOpen, setMediaViewerOpen] = useState(false);
     const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
+    const [isAnimating, setIsAnimating] = useState(false);
 
     const canDelete = user?.isAdmin || user?.id === post.userId;
 
@@ -132,6 +135,31 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
                 transform: scale(1.1);
                 background-color: rgba(0, 0, 0, 0.7);
             }
+
+            /* Like button animations */
+            @keyframes heartBeat {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.3); }
+                100% { transform: scale(1); }
+            }
+
+            .heart-animation {
+                animation: heartBeat 0.6s ease-in-out;
+            }
+
+            .like-count-change {
+                animation: pulse 0.3s ease-in-out;
+            }
+
+            @keyframes likeSuccess {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.2); }
+                100% { transform: scale(1); }
+            }
+
+            .like-success {
+                animation: likeSuccess 0.4s ease-in-out;
+            }
         `;
         document.head.appendChild(style);
 
@@ -161,6 +189,25 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
         } catch (error) {
             console.error('Failed to delete post:', error);
             alert('Failed to delete post. Please try again.');
+        }
+    };
+
+    const handleLike = async () => {
+        if (!user) {
+            alert('Please log in to like posts');
+            return;
+        }
+
+        try {
+            setIsAnimating(true);
+            await likeMutation.mutateAsync(post.id);
+
+            setTimeout(() => {
+                setIsAnimating(false);
+            }, 600);
+        } catch (error) {
+            console.error('Failed to toggle like:', error);
+            setIsAnimating(false);
         }
     };
 
@@ -445,9 +492,34 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
             />
 
             <div className="flex items-center justify-between pt-3 border-t border-neutral-200 dark:border-neutral-600">
-                <div className="text-sm text-neutral-500 dark:text-neutral-400">
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={handleLike}
+                        disabled={likeMutation.isPending || !user}
+                        className={`group flex items-center gap-2 px-3 py-1.5 rounded-full transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${post.isLikedByMe
+                                ? 'text-red-500 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30'
+                                : 'text-neutral-600 dark:text-neutral-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
+                            }`}
+                        title={user ? (post.isLikedByMe ? 'Unlike' : 'Like') : 'Login to like posts'}
+                    >
+                        <Heart
+                            size={18}
+                            className={`transition-all duration-200 ${post.isLikedByMe
+                                    ? 'fill-red-500 text-red-500 scale-110'
+                                    : 'group-hover:scale-110 group-active:scale-125'
+                                } ${likeMutation.isPending ? 'animate-pulse' : ''} ${isAnimating ? 'heart-animation' : ''
+                                }`}
+                        />
+                        <span className={`text-sm font-medium transition-all duration-200 ${post.isLikedByMe ? 'text-red-500' : ''
+                            } ${isAnimating ? 'like-count-change' : ''}`}>
+                            {post.likeCount}
+                        </span>
+                    </button>
+
                     {post.media && post.media.length > 0 && (
-                        <span>{post.media.length} media file{post.media.length > 1 ? 's' : ''}</span>
+                        <div className="text-sm text-neutral-500 dark:text-neutral-400">
+                            {post.media.length} media file{post.media.length > 1 ? 's' : ''}
+                        </div>
                     )}
                 </div>
 

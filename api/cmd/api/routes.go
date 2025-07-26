@@ -30,10 +30,19 @@ func (s *APIServer) Routes() *chi.Mux {
 	r.Get("/login", makeHTTPHandleFunc(s.loginHandler))
 	r.Post("/logout", makeHTTPHandleFunc(s.logoutHandler))
 	r.Route("/posts", func(r chi.Router) {
-		r.Get("/", makeHTTPHandleFunc(s.listPostsHandler))
-		r.Get("/{postId}", makeHTTPHandleFunc(s.getPostHandler))
-		r.Get("/user/{userId}", makeHTTPHandleFunc(s.getUserPostsHandler))
+		r.Group(func(r chi.Router) {
+			r.Use(s.OptionalAuthTokenMiddleware)
+			r.Get("/", makeHTTPHandleFunc(s.listPostsHandler))
+			r.Get("/{postId}", makeHTTPHandleFunc(s.getPostHandler))
+			r.Get("/user/{userId}", makeHTTPHandleFunc(s.getUserPostsHandler))
+		})
+
 		r.Get("/media/{mediaId}/download", makeHTTPHandleFunc(s.downloadPostMediaHandler))
+
+		r.Group(func(r chi.Router) {
+			r.Use(s.AuthTokenMiddleware)
+			r.Post("/{postId}/like", makeHTTPHandleFunc(s.toggleLikeHandler))
+		})
 
 		r.Group(func(r chi.Router) {
 			r.Use(s.AuthTokenMiddleware)

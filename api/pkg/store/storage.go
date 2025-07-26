@@ -18,10 +18,16 @@ type Storage struct {
 		CreatePost(*Post) error
 		AddMediaToPost(postID string, media []PostMedia) error
 		GetPostByID(postID string) (*Post, error)
+		GetPostByIDWithUserContext(postID, currentUserID string) (*Post, error)
 		GetAllPosts(limit, offset int) ([]Post, error)
+		GetAllPostsWithUserContext(limit, offset int, currentUserID string) ([]Post, error)
 		GetPostsByUserID(userID string, limit, offset int) ([]Post, error)
+		GetPostsByUserIDWithUserContext(userID string, limit, offset int, currentUserID string) ([]Post, error)
 		DeletePost(postID string) error
 		GetPostMediaByID(mediaID string) (*PostMedia, error)
+		ToggleLike(postID, userID string) (bool, error)
+		GetLikeCount(postID string) (int, error)
+		IsLikedByUser(postID, userID string) (bool, error)
 	}
 }
 

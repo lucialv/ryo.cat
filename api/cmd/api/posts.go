@@ -28,13 +28,15 @@ type CreateMediaRequest struct {
 }
 
 type PostResponse struct {
-	ID        string              `json:"id"`
-	UserID    string              `json:"userId"`
-	Body      string              `json:"body"`
-	CreatedAt time.Time           `json:"createdAt"`
-	UpdatedAt time.Time           `json:"updatedAt"`
-	User      *UserResponse       `json:"user"`
-	Media     []PostMediaResponse `json:"media"`
+	ID          string              `json:"id"`
+	UserID      string              `json:"userId"`
+	Body        string              `json:"body"`
+	CreatedAt   time.Time           `json:"createdAt"`
+	UpdatedAt   time.Time           `json:"updatedAt"`
+	User        *UserResponse       `json:"user"`
+	Media       []PostMediaResponse `json:"media"`
+	LikeCount   int                 `json:"likeCount"`
+	IsLikedByMe bool                `json:"isLikedByMe"`
 }
 
 type UserResponse struct {
@@ -129,7 +131,20 @@ func (s *APIServer) getPostHandler(w http.ResponseWriter, r *http.Request) error
 		return fmt.Errorf("post ID is required")
 	}
 
-	post, err := s.Store.Posts.GetPostByID(postID)
+	currentUserID := ""
+	if user, ok := r.Context().Value(userCtx).(*store.User); ok && user != nil {
+		currentUserID = user.ID
+	}
+
+	var post *store.Post
+	var err error
+
+	if currentUserID != "" {
+		post, err = s.Store.Posts.GetPostByIDWithUserContext(postID, currentUserID)
+	} else {
+		post, err = s.Store.Posts.GetPostByID(postID)
+	}
+
 	if err != nil {
 		return fmt.Errorf("failed to get post: %w", err)
 	}
@@ -162,7 +177,20 @@ func (s *APIServer) listPostsHandler(w http.ResponseWriter, r *http.Request) err
 
 	offset := (page - 1) * limit
 
-	posts, err := s.Store.Posts.GetAllPosts(limit+1, offset)
+	currentUserID := ""
+	if user, ok := r.Context().Value(userCtx).(*store.User); ok && user != nil {
+		currentUserID = user.ID
+	}
+
+	var posts []store.Post
+	var err error
+
+	if currentUserID != "" {
+		posts, err = s.Store.Posts.GetAllPostsWithUserContext(limit+1, offset, currentUserID)
+	} else {
+		posts, err = s.Store.Posts.GetAllPosts(limit+1, offset)
+	}
+
 	if err != nil {
 		return fmt.Errorf("failed to get posts: %w", err)
 	}
@@ -212,7 +240,20 @@ func (s *APIServer) getUserPostsHandler(w http.ResponseWriter, r *http.Request) 
 
 	offset := (page - 1) * limit
 
-	posts, err := s.Store.Posts.GetPostsByUserID(userID, limit+1, offset)
+	currentUserID := ""
+	if user, ok := r.Context().Value(userCtx).(*store.User); ok && user != nil {
+		currentUserID = user.ID
+	}
+
+	var posts []store.Post
+	var err error
+
+	if currentUserID != "" {
+		posts, err = s.Store.Posts.GetPostsByUserIDWithUserContext(userID, limit+1, offset, currentUserID)
+	} else {
+		posts, err = s.Store.Posts.GetPostsByUserID(userID, limit+1, offset)
+	}
+
 	if err != nil {
 		return fmt.Errorf("failed to get user posts: %w", err)
 	}
@@ -269,6 +310,40 @@ func (s *APIServer) deletePostHandler(w http.ResponseWriter, r *http.Request) er
 	}
 
 	return u.WriteJSON(w, http.StatusOK, map[string]string{"message": "post deleted successfully"})
+}
+
+func (s *APIServer) toggleLikeHandler(w http.ResponseWriter, r *http.Request) error {
+	postID := chi.URLParam(r, "postId")
+	if postID == "" {
+		return fmt.Errorf("post ID is required")
+	}
+
+	user := r.Context().Value(userCtx).(*store.User)
+
+	post, err := s.Store.Posts.GetPostByID(postID)
+	if err != nil {
+		return fmt.Errorf("failed to get post: %w", err)
+	}
+	if post == nil {
+		return fmt.Errorf("post not found")
+	}
+
+	isLiked, err := s.Store.Posts.ToggleLike(postID, user.ID)
+	if err != nil {
+		return fmt.Errorf("failed to toggle like: %w", err)
+	}
+
+	likeCount, err := s.Store.Posts.GetLikeCount(postID)
+	if err != nil {
+		return fmt.Errorf("failed to get like count: %w", err)
+	}
+
+	response := map[string]interface{}{
+		"isLiked":   isLiked,
+		"likeCount": likeCount,
+	}
+
+	return u.WriteJSON(w, http.StatusOK, response)
 }
 
 func (s *APIServer) uploadPostMediaHandler(w http.ResponseWriter, r *http.Request) error {
@@ -363,11 +438,13 @@ func (s *APIServer) downloadPostMediaHandler(w http.ResponseWriter, r *http.Requ
 
 func convertPostToResponse(post *store.Post) PostResponse {
 	response := PostResponse{
-		ID:        post.ID,
-		UserID:    post.UserID,
-		Body:      post.Body,
-		CreatedAt: post.CreatedAt,
-		UpdatedAt: post.UpdatedAt,
+		ID:          post.ID,
+		UserID:      post.UserID,
+		Body:        post.Body,
+		CreatedAt:   post.CreatedAt,
+		UpdatedAt:   post.UpdatedAt,
+		LikeCount:   post.LikeCount,
+		IsLikedByMe: post.IsLikedByMe,
 	}
 
 	if post.User != nil {

@@ -39,10 +39,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [isLoading, setIsLoading] = useState(true);
     const queryClient = useQueryClient();
 
-    const setUser = (user: User) => {
-        setUserState(user);
-        sessionStorage.setItem("user", JSON.stringify(user));
+    const setUser = (newUser: User) => {
+        const wasLoggedOut = user === null;
+        setUserState(newUser);
+        sessionStorage.setItem("user", JSON.stringify(newUser));
+
         queryClient.invalidateQueries({ queryKey: ['profile'] });
+
+        if (wasLoggedOut && newUser !== null) {
+            queryClient.invalidateQueries({ queryKey: ['posts'] });
+        }
     };
 
     const logout = async () => {
@@ -65,12 +71,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             try {
                 const parsed: User = JSON.parse(saved);
                 setUserState(parsed);
+                queryClient.invalidateQueries({ queryKey: ['posts'] });
             } catch {
                 sessionStorage.removeItem("user");
             }
         }
         setIsLoading(false);
-    }, []);
+    }, [queryClient]);
 
     return (
         <AuthContext.Provider value={{ user, setUser, logout, isLoading }}>
