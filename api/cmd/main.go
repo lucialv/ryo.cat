@@ -4,6 +4,7 @@ import (
 	"log"
 	"os"
 	"time"
+	"fmt"
 
 	"github.com/lucialv/ryo.cat/cmd/api"
 	"github.com/lucialv/ryo.cat/internal/auth"
@@ -16,8 +17,13 @@ func main() {
 	if os.Getenv("ENV") != "production" {
 		env.Load()
 	}
+	addr := env.GetString("ADDR", ":8000")
+	if p := os.Getenv("PORT"); p != "" {
+     	addr = fmt.Sprintf(":%s", p)
+	}
+
 	cfg := api.Config{
-		Addr:        env.GetString("ADDR", ":8000"),
+		Addr:        addr,
 		ApiURL:      env.GetString("EXTERNAL_URL", "https://api.ryo.cat"),
 		FrontendURL: env.GetString("FRONTEND_URL", "https://ryo.cat"),
 		Env:         env.GetString("ENV", "development"),
