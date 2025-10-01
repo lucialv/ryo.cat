@@ -10,7 +10,9 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/gofrs/uuid"
 	"github.com/lucialv/ryo.cat/pkg/store"
+	"github.com/lucialv/ryo.cat/pkg/utils"
 	u "github.com/lucialv/ryo.cat/pkg/utils"
 )
 
@@ -94,11 +96,13 @@ func (s *APIServer) createPostHandler(w http.ResponseWriter, r *http.Request) er
 			if !exists {
 				return fmt.Errorf("media file not found: %s", m.FileKey)
 			}
-
-			mediaURL, err := s.R2Storage.GeneratePreSignedURL(m.FileKey, 24*3600)
+			
+			fileInfo, err := s.R2Storage.GetFileInfo(m.FileKey)
 			if err != nil {
-				return fmt.Errorf("failed to generate media URL: %w", err)
+				return fmt.Errorf("failed to check media info: %w", err)
 			}
+						
+			mediaURL:= fmt.Sprintf("https://cdn.ryo.cat/%s", fileInfo.Key)
 
 			postMedia := store.NewPostMedia(
 				post.ID,
@@ -353,7 +357,7 @@ func (s *APIServer) uploadPostMediaHandler(w http.ResponseWriter, r *http.Reques
 		return fmt.Errorf("failed to parse multipart form: %w", err)
 	}
 
-	file, header, err := r.FormFile("file")
+	file, _, err := r.FormFile("file")
 	if err != nil {
 		return fmt.Errorf("failed to get file from form: %w", err)
 	}
@@ -375,8 +379,13 @@ func (s *APIServer) uploadPostMediaHandler(w http.ResponseWriter, r *http.Reques
 		return fmt.Errorf("unsupported file type: %s. Only images and videos are allowed", contentType)
 	}
 
-	key := fmt.Sprintf("posts/media/%d_%s", time.Now().Unix(), header.Filename)
-
+	uuid, err := uuid.NewV4()
+	if err != nil {
+		return fmt.Errorf("failed to create a new uuid")
+	}
+	
+	key := fmt.Sprintf("posts/media/%s%s", uuid, utils.ConvertFileType(contentType))
+	
 	if err := s.R2Storage.UploadFile(key, data, contentType); err != nil {
 		return fmt.Errorf("failed to upload media to R2: %w", err)
 	}

@@ -8,7 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gofrs/uuid"
 	"github.com/lucialv/ryo.cat/pkg/store"
+	"github.com/lucialv/ryo.cat/pkg/utils"
 	u "github.com/lucialv/ryo.cat/pkg/utils"
 )
 
@@ -78,7 +80,7 @@ func (s *APIServer) uploadProfilePictureHandler(w http.ResponseWriter, r *http.R
 		return fmt.Errorf("failed to parse multipart form: %w", err)
 	}
 
-	file, header, err := r.FormFile("file")
+	file, _, err := r.FormFile("file")
 	if err != nil {
 		return fmt.Errorf("failed to get file from form: %w", err)
 	}
@@ -94,17 +96,19 @@ func (s *APIServer) uploadProfilePictureHandler(w http.ResponseWriter, r *http.R
 	if !strings.HasPrefix(contentType, "image/") {
 		return fmt.Errorf("file must be an image. Got: %s", contentType)
 	}
-
-	key := fmt.Sprintf("profile-pictures/%s_%d_%s", user.ID, time.Now().Unix(), header.Filename)
+	
+	uuid, err := uuid.NewV4()
+	if err != nil {
+		return fmt.Errorf("failed to create a new uuid")
+	}
+	
+	key := fmt.Sprintf("profile-pictures/%s%s", uuid, utils.ConvertFileType(contentType))
 
 	if err := s.R2Storage.UploadFile(key, data, contentType); err != nil {
 		return fmt.Errorf("failed to upload profile picture to R2: %w", err)
 	}
 
-	profilePictureURL, err := s.R2Storage.GeneratePreSignedURL(key, 7*24*3600)
-	if err != nil {
-		return fmt.Errorf("failed to generate profile picture URL: %w", err)
-	}
+	profilePictureURL := fmt.Sprintf("https://cdn.ryo.cat/%s", key)
 
 	if err := s.Store.Users.UpdateProfilePicture(user.ID, &profilePictureURL); err != nil {
 		return fmt.Errorf("failed to update profile picture in database: %w", err)
