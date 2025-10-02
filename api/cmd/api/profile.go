@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/gofrs/uuid"
 	"github.com/lucialv/ryo.cat/pkg/store"
 	"github.com/lucialv/ryo.cat/pkg/utils"
@@ -40,6 +41,20 @@ func (s *APIServer) getUserProfileHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	return u.WriteJSON(w, http.StatusOK, response)
+}
+
+func (s *APIServer) getProfilePictureHandler(w http.ResponseWriter, r *http.Request) error {
+	userId := chi.URLParam(r, "userId")
+	if userId == "" {
+		return fmt.Errorf("user ID is required")
+	}
+
+	user, err := s.Store.Users.GetByID(userId)
+	if err != nil {
+		return fmt.Errorf("failed to get user with id: %s", userId)
+	}
+	
+	return u.WriteJSON(w, http.StatusOK, user.ProfilePictureURL)
 }
 
 func (s *APIServer) updateProfilePictureHandler(w http.ResponseWriter, r *http.Request) error {

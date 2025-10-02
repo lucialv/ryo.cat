@@ -7,7 +7,6 @@ export interface Post {
   user: {
     id: string;
     name: string;
-    email: string;
     isAdmin: boolean;
     profilePictureUrl?: string;
   };
@@ -75,7 +74,7 @@ export const postsApi = {
       `${API_BASE_URL}/v1/posts?page=${page}&limit=${limit}`,
       {
         credentials: "include",
-      }
+      },
     );
 
     if (!response.ok) {
@@ -102,13 +101,13 @@ export const postsApi = {
   getPostsByUser: async (
     userId: string,
     page = 1,
-    limit = 10
+    limit = 10,
   ): Promise<PostsListResponse> => {
     const response = await fetch(
       `${API_BASE_URL}/v1/posts/user/${userId}?page=${page}&limit=${limit}`,
       {
         credentials: "include",
-      }
+      },
     );
 
     if (!response.ok) {
@@ -150,7 +149,7 @@ export const postsApi = {
   },
 
   toggleLike: async (
-    postId: string
+    postId: string,
   ): Promise<{ isLiked: boolean; likeCount: number }> => {
     const response = await fetch(`${API_BASE_URL}/v1/posts/${postId}/like`, {
       method: "POST",

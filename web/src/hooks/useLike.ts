@@ -56,7 +56,7 @@ export const useLikePost = () => {
             isLikedByMe: newIsLikedByMe,
             likeCount: newLikeCount,
           };
-        }
+        },
       );
 
       return { previousPostsPages, previousPost, postId };
@@ -68,7 +68,7 @@ export const useLikePost = () => {
       if (context?.previousPost) {
         queryClient.setQueryData(
           postsKeys.detail(context.postId),
-          context.previousPost
+          context.previousPost,
         );
       }
     },
@@ -103,7 +103,7 @@ export const useLikePost = () => {
             isLikedByMe: data.isLiked,
             likeCount: data.likeCount,
           };
-        }
+        },
       );
     },
     onSettled: (_, __, postId) => {

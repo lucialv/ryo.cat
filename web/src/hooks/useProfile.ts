@@ -8,13 +8,51 @@ import {
 export const profileKeys = {
   all: ["profile"] as const,
   profile: () => [...profileKeys.all, "current"] as const,
+  userProfilePicture: (userId: string) =>
+    [...profileKeys.all, "picture", userId] as const,
 };
 
-export const useProfile = () => {
+export const useProfile = (userId: string) => {
   return useQuery({
     queryKey: profileKeys.profile(),
     queryFn: profileApi.getProfile,
+    enabled: !!userId,
     staleTime: 1000 * 60 * 5, // 5 minutes :)
+  });
+};
+
+export const useUserProfilePicture = (userId: string) => {
+  return useQuery({
+    queryKey: profileKeys.userProfilePicture(userId),
+    queryFn: () => profileApi.getUserProfilePicture(userId),
+    enabled: !!userId,
+    staleTime: 1000 * 60 * 10, // 10 minutes ~
+  });
+};
+
+export const useUsersProfilePictures = (userIds: string[]) => {
+  return useQuery({
+    queryKey: [...profileKeys.all, "pictures", userIds.sort()],
+    queryFn: async () => {
+      const results: Record<string, string | null> = {};
+
+      await Promise.all(
+        userIds.map(async (userId) => {
+          try {
+            const profilePicture =
+              await profileApi.getUserProfilePicture(userId);
+            results[userId] = profilePicture;
+          } catch (error) {
+            results[userId] = null;
+            console.error(error);
+          }
+        }),
+      );
+
+      return results;
+    },
+    enabled: userIds.length > 0,
+    staleTime: 1000 * 60 * 10, // 10 minutes ^
   });
 };
 

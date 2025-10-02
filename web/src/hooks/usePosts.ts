@@ -3,8 +3,15 @@ import {
   useQuery,
   useQueryClient,
   useInfiniteQuery,
+  type InfiniteData,
 } from "@tanstack/react-query";
 import { postsApi, type CreatePostRequest, type Post } from "@/api/posts";
+
+type PostsPage = {
+  posts: Post[];
+  page: number;
+  hasMore: boolean;
+};
 
 export const postsKeys = {
   all: ["posts"] as const,
@@ -62,22 +69,25 @@ export const useCreatePost = () => {
 
       queryClient.setQueryData(postsKeys.detail(newPost.id), newPost);
 
-      queryClient.setQueryData(postsKeys.lists(), (oldData: any) => {
-        if (!oldData) return oldData;
+      queryClient.setQueryData<InfiniteData<PostsPage>>(
+        postsKeys.lists(),
+        (oldData) => {
+          if (!oldData) return oldData;
 
-        const newPages = [...oldData.pages];
-        if (newPages[0]) {
-          newPages[0] = {
-            ...newPages[0],
-            posts: [newPost, ...newPages[0].posts],
+          const newPages = [...oldData.pages];
+          if (newPages[0]) {
+            newPages[0] = {
+              ...newPages[0],
+              posts: [newPost, ...newPages[0].posts],
+            };
+          }
+
+          return {
+            ...oldData,
+            pages: newPages,
           };
-        }
-
-        return {
-          ...oldData,
-          pages: newPages,
-        };
-      });
+        },
+      );
     },
     onError: (error) => {
       console.error("Failed to create post:", error);

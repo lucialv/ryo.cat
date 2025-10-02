@@ -29,6 +29,18 @@ func (s *APIServer) Routes() *chi.Mux {
 
 	r.Get("/login", makeHTTPHandleFunc(s.loginHandler))
 	r.Post("/logout", makeHTTPHandleFunc(s.logoutHandler))
+
+	r.Route("/profile", func(r chi.Router) {
+		r.Get("/picture/{userId}", makeHTTPHandleFunc(s.getProfilePictureHandler))
+		r.Group(func(r chi.Router) {
+			r.Use(s.AuthTokenMiddleware)
+			r.Get("/", makeHTTPHandleFunc(s.getUserProfileHandler))
+			r.Put("/picture/update", makeHTTPHandleFunc(s.updateProfilePictureHandler))
+			r.Post("/picture/upload", makeHTTPHandleFunc(s.uploadProfilePictureHandler))
+			r.Delete("/picture/delete", makeHTTPHandleFunc(s.deleteProfilePictureHandler))
+		})
+	})
+
 	r.Route("/posts", func(r chi.Router) {
 		r.Group(func(r chi.Router) {
 			r.Use(s.OptionalAuthTokenMiddleware)
@@ -67,13 +79,6 @@ func (s *APIServer) Routes() *chi.Mux {
 				r.Get("/info", makeHTTPHandleFunc(s.getFileInfoHandler))
 				r.Get("/exists", makeHTTPHandleFunc(s.fileExistsHandler))
 			})
-		})
-
-		r.Route("/profile", func(r chi.Router) {
-			r.Get("/", makeHTTPHandleFunc(s.getUserProfileHandler))
-			r.Put("/picture", makeHTTPHandleFunc(s.updateProfilePictureHandler))
-			r.Post("/picture/upload", makeHTTPHandleFunc(s.uploadProfilePictureHandler))
-			r.Delete("/picture", makeHTTPHandleFunc(s.deleteProfilePictureHandler))
 		})
 	})
 

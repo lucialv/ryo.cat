@@ -20,7 +20,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 export const profileApi = {
   getProfile: async (): Promise<UserProfile> => {
-    const response = await fetch(`${API_BASE_URL}/v1/profile`, {
+    const response = await fetch(`${API_BASE_URL}/v1/profile/`, {
       credentials: "include",
     });
 
@@ -32,10 +32,23 @@ export const profileApi = {
     return response.json();
   },
 
+  getUserProfilePicture: async (userId: string): Promise<string | null> => {
+    const response = await fetch(
+      `${API_BASE_URL}/v1/profile/picture/${userId}`,
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.Error || "Failed to fetch user profile picture");
+    }
+
+    return response.json();
+  },
+
   updateProfilePicture: async (
-    data: UpdateProfilePictureRequest
+    data: UpdateProfilePictureRequest,
   ): Promise<UserProfile> => {
-    const response = await fetch(`${API_BASE_URL}/v1/profile/picture`, {
+    const response = await fetch(`${API_BASE_URL}/v1/profile/picture/update`, {
       method: "PUT",
       credentials: "include",
       headers: {
@@ -53,7 +66,7 @@ export const profileApi = {
   },
 
   uploadProfilePicture: async (
-    file: File
+    file: File,
   ): Promise<UploadProfilePictureResponse> => {
     const formData = new FormData();
     formData.append("file", file);
@@ -73,7 +86,7 @@ export const profileApi = {
   },
 
   deleteProfilePicture: async (): Promise<{ message: string }> => {
-    const response = await fetch(`${API_BASE_URL}/v1/profile/picture`, {
+    const response = await fetch(`${API_BASE_URL}/v1/profile/picture/delete`, {
       method: "DELETE",
       credentials: "include",
     });

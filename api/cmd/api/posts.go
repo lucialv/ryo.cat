@@ -44,7 +44,6 @@ type PostResponse struct {
 type UserResponse struct {
 	ID                string `json:"id"`
 	Name              string `json:"name"`
-	Email             string `json:"email"`
 	IsAdmin           bool   `json:"isAdmin"`
 	ProfilePictureURL string `json:"profilePictureUrl,omitempty"`
 }
@@ -465,7 +464,6 @@ func convertPostToResponse(post *store.Post) PostResponse {
 		response.User = &UserResponse{
 			ID:                post.User.ID,
 			Name:              post.User.Name,
-			Email:             post.User.Email,
 			IsAdmin:           post.User.IsAdmin,
 			ProfilePictureURL: profilePictureURL,
 		}

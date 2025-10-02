@@ -8,8 +8,9 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     <div className="flex flex-col min-h-screen w-full bg-white dark:bg-neutral-900 relative">
       <div
         className="fixed inset-0 z-0"
-        style={{
-          backgroundImage: `
+        style={
+          {
+            backgroundImage: `
             radial-gradient(
               circle 1200px at 20% 80%,
               var(--radial-color),
@@ -26,7 +27,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               transparent
             )
           `,
-        } as React.CSSProperties}
+          } as React.CSSProperties
+        }
       />
       <div className="relative z-10 flex flex-col flex-1">
         <Header logoSrc={logo} />
