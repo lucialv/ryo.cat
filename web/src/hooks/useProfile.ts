@@ -41,7 +41,7 @@ export const useUsersProfilePictures = (userIds: string[]) => {
           try {
             const profilePicture =
               await profileApi.getUserProfilePicture(userId);
-            results[userId] = profilePicture;
+            results[userId] = profilePicture.profilePictureUrl;
           } catch (error) {
             results[userId] = null;
             console.error(error);
