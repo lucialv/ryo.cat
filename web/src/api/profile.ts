@@ -7,6 +7,10 @@ export interface UserProfile {
   createdAt: string;
 }
 
+export interface UserProfilePicture {
+  profilePictureUrl: string;
+}
+
 export interface UpdateProfilePictureRequest {
   profilePictureUrl?: string;
 }
@@ -32,7 +36,7 @@ export const profileApi = {
     return response.json();
   },
 
-  getUserProfilePicture: async (userId: string): Promise<string | null> => {
+  getUserProfilePicture: async (userId: string): Promise<UserProfilePicture> => {
     const response = await fetch(
       `${API_BASE_URL}/v1/profile/picture/${userId}`,
     );

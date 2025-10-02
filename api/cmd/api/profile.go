@@ -54,7 +54,17 @@ func (s *APIServer) getProfilePictureHandler(w http.ResponseWriter, r *http.Requ
 		return fmt.Errorf("failed to get user with id: %s", userId)
 	}
 	
-	return u.WriteJSON(w, http.StatusOK, user.ProfilePictureURL)
+	response := struct {
+		ProfilePictureURL *string `json:"profilePictureUrl"`
+	}{
+		ProfilePictureURL: user.ProfilePictureURL,
+	}
+
+	if user.ProfilePictureURL == nil {
+		response.ProfilePictureURL = nil
+	}	
+	
+	return u.WriteJSON(w, http.StatusOK, response)
 }
 
 func (s *APIServer) updateProfilePictureHandler(w http.ResponseWriter, r *http.Request) error {

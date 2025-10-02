@@ -12,7 +12,7 @@ interface MediaFile {
 
 const PostForm: React.FC = () => {
   const { user } = useAuth();
-  const { data: profile } = useProfile();
+  const { data: profile } = useProfile(user?.id || "");
   const [postBody, setPostBody] = useState("");
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);

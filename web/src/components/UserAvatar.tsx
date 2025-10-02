@@ -32,7 +32,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
   fallbackClassName = "",
 }) => {
   const {
-    data: profilePictureUrl,
+    data,
     isLoading,
     error,
   } = useUserProfilePicture(userId);
@@ -48,7 +48,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
     );
   }
 
-  if (error || !profilePictureUrl) {
+  if (error || !data?.profilePictureUrl) {
     return (
       <div className={fallbackClasses}>
         <User className={`${iconSizeClasses[size]} text-white`} />
@@ -58,7 +58,7 @@ const UserAvatar: React.FC<UserAvatarProps> = ({
 
   return (
     <img
-      src={profilePictureUrl}
+      src={data?.profilePictureUrl}
       alt={userName ? `${userName}'s profile` : "User profile"}
       className={baseClasses}
       onError={(e) => {
