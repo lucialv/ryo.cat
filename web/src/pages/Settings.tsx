@@ -17,7 +17,6 @@ import {
   AlertCircle,
   Check,
   Pencil,
-  X,
 } from "lucide-react";
 import { z } from "zod";
 
@@ -187,7 +186,7 @@ const Settings: React.FC = () => {
 
   if (profileError) {
     return (
-      <div className="min-h-screen pt-[73px] px-4">
+      <div className="min-h-screen pt-[73px] px-3 sm:px-4">
         <div className="max-w-2xl mx-auto py-8">
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
             <div className="flex items-center">
@@ -223,7 +222,7 @@ const Settings: React.FC = () => {
           </p>
         </div>
 
-        <div className="bg-white/70 dark:bg-neutral-800/70 rounded-2xl border border-neutral-200 dark:border-neutral-600 p-6 mb-6">
+        <div className="bg-white/70 dark:bg-neutral-800/70 rounded-2xl border border-neutral-200 dark:border-neutral-600 p-4 sm:p-6 mb-6">
           <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-4 flex items-center">
             <User className="h-5 w-5 mr-2" />
             Profile Picture
@@ -340,7 +339,7 @@ const Settings: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white/70 dark:bg-neutral-800/70 rounded-2xl border border-neutral-200 dark:border-neutral-600 p-6">
+        <div className="bg-white/70 dark:bg-neutral-800/70 rounded-2xl border border-neutral-200 dark:border-neutral-600 p-4 sm:p-6">
           <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-4">
             Profile Information
           </h2>
@@ -385,128 +384,136 @@ const Settings: React.FC = () => {
                 </div>
               )}
               {editingUsername && (
-                <form onSubmit={handleUsernameSubmit} className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-neutral-500 dark:text-neutral-400">
-                      @
-                    </span>
-                    <input
-                      type="text"
-                      value={usernameInput}
-                      onChange={(e) => {
-                        const sanitized = sanitizeUsername(e.target.value);
-                        setUsernameInput(sanitized);
-                        setUsernameError(null);
-                        setUsernameSuccess(null);
-                      }}
-                      maxLength={15}
-                      className="flex-1 bg-white/60 dark:bg-neutral-700/60 border border-neutral-300 dark:border-neutral-600 rounded-md px-3 py-1.5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-400 dark:focus:ring-purple-600"
-                      placeholder="username"
-                      autoFocus
-                      inputMode="text"
-                      autoComplete="off"
-                      spellCheck={false}
-                    />
-                    <span
-                      className="text-xs text-neutral-400 dark:text-neutral-500 tabular-nums select-none"
-                      aria-live="polite"
-                    >
-                      {usernameInput.length}/15
-                    </span>
-                    <button
-                      type="submit"
-                      disabled={
-                        updateUsername.isPending ||
-                        availabilityLoading ||
-                        usernameError !== null ||
-                        availabilityError !== null ||
-                        usernameAvailable === false ||
-                        edgeSeparator ||
-                        finalizeUsername(usernameInput) ===
-                          (profile?.username || user?.username)
-                      }
-                      className="px-3 py-1.5 text-sm rounded-md bg-purple-500 text-white font-medium hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {updateUsername.isPending ? "Saving..." : "Save"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditingUsername(false);
-                        setUsernameError(null);
-                        setUsernameSuccess(null);
-                        setUsernameInput(
-                          profile?.username || user?.username || "",
-                        );
-                      }}
-                      className="px-2 py-1.5 text-sm rounded-md bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-300 dark:hover:bg-neutral-600"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    {(() => {
-                      if (usernameError) {
-                        return (
-                          <p className="text-xs text-red-500 flex items-center gap-1">
-                            <AlertCircle className="h-3 w-3" /> {usernameError}
-                          </p>
-                        );
-                      }
-                      if (availabilityError) {
-                        return (
-                          <p className="text-xs text-red-500 flex items-center gap-1">
-                            <AlertCircle className="h-3 w-3" />{" "}
-                            {availabilityError}
-                          </p>
-                        );
-                      }
-                      if (edgeSeparator) {
-                        return (
-                          <p className="text-xs text-red-500 flex items-center gap-1">
-                            <AlertCircle className="h-3 w-3" /> Cannot start or
-                            end with . _ -
-                          </p>
-                        );
-                      }
-                      if (availabilityLoading) {
-                        return (
-                          <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                            Checking...
-                          </p>
-                        );
-                      }
-                      if (isUnchangedUsername) {
-                        return (
-                          <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                            3–15 chars. a-z 0-9 . _ -
-                          </p>
-                        );
-                      }
-                      if (
-                        usernameAvailable === false &&
-                        finalizeUsername(usernameInput) !==
-                          (profile?.username || user?.username)
-                      ) {
-                        return (
-                          <p className="text-xs text-red-500 flex items-center gap-1">
-                            <AlertCircle className="h-3 w-3" /> Already taken
-                          </p>
-                        );
-                      }
-                      if (
-                        usernameAvailable &&
-                        finalizeUsername(usernameInput) !==
-                          (profile?.username || user?.username)
-                      ) {
-                        return (
-                          <p className="text-xs text-green-600 flex items-center gap-1">
-                            <Check className="h-3 w-3" /> Available
-                          </p>
-                        );
-                      }
-                      return null;
-                    })()}
+                <form onSubmit={handleUsernameSubmit} className="space-y-3">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-neutral-500 dark:text-neutral-400">
+                        @
+                      </span>
+                      <div className="relative flex-1 min-w-0">
+                        <input
+                          type="text"
+                          value={usernameInput}
+                          onChange={(e) => {
+                            const sanitized = sanitizeUsername(e.target.value);
+                            setUsernameInput(sanitized);
+                            setUsernameError(null);
+                            setUsernameSuccess(null);
+                          }}
+                          maxLength={15}
+                          className="w-full bg-white/60 dark:bg-neutral-700/60 border border-neutral-300 dark:border-neutral-600 rounded-lg px-3 py-2 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-400 dark:focus:ring-purple-600"
+                          placeholder="username"
+                          autoFocus
+                          inputMode="text"
+                          autoComplete="off"
+                          spellCheck={false}
+                        />
+                        <span
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-neutral-400 dark:text-neutral-500 tabular-nums select-none"
+                          aria-live="polite"
+                        >
+                          {usernameInput.length}/15
+                        </span>
+                      </div>
+                      <button
+                        type="submit"
+                        disabled={
+                          updateUsername.isPending ||
+                          availabilityLoading ||
+                          usernameError !== null ||
+                          availabilityError !== null ||
+                          usernameAvailable === false ||
+                          edgeSeparator ||
+                          finalizeUsername(usernameInput) ===
+                            (profile?.username || user?.username)
+                        }
+                        className="px-4 py-2 text-sm rounded-lg bg-purple-500 text-white font-medium hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {updateUsername.isPending ? "Saving..." : "Save"}
+                      </button>
+                    </div>
+                    <div className="flex items-start gap-4 flex-wrap">
+                      <div className="min-h-[18px]">
+                        {(() => {
+                          if (usernameError) {
+                            return (
+                              <p className="text-xs text-red-500 flex items-center gap-1">
+                                <AlertCircle className="h-3 w-3" />{" "}
+                                {usernameError}
+                              </p>
+                            );
+                          }
+                          if (availabilityError) {
+                            return (
+                              <p className="text-xs text-red-500 flex items-center gap-1">
+                                <AlertCircle className="h-3 w-3" />{" "}
+                                {availabilityError}
+                              </p>
+                            );
+                          }
+                          if (edgeSeparator) {
+                            return (
+                              <p className="text-xs text-red-500 flex items-center gap-1">
+                                <AlertCircle className="h-3 w-3" /> Cannot start
+                                or end with . _ -
+                              </p>
+                            );
+                          }
+                          if (availabilityLoading) {
+                            return (
+                              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                                Checking...
+                              </p>
+                            );
+                          }
+                          if (isUnchangedUsername) {
+                            return (
+                              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                                3–15 chars. a-z 0-9 . _ -
+                              </p>
+                            );
+                          }
+                          if (
+                            usernameAvailable === false &&
+                            finalizeUsername(usernameInput) !==
+                              (profile?.username || user?.username)
+                          ) {
+                            return (
+                              <p className="text-xs text-red-500 flex items-center gap-1">
+                                <AlertCircle className="h-3 w-3" /> Already
+                                taken
+                              </p>
+                            );
+                          }
+                          if (
+                            usernameAvailable &&
+                            finalizeUsername(usernameInput) !==
+                              (profile?.username || user?.username)
+                          ) {
+                            return (
+                              <p className="text-xs text-green-600 flex items-center gap-1">
+                                <Check className="h-3 w-3" /> Available
+                              </p>
+                            );
+                          }
+                          return null;
+                        })()}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingUsername(false);
+                          setUsernameError(null);
+                          setUsernameSuccess(null);
+                          setUsernameInput(
+                            profile?.username || user?.username || "",
+                          );
+                        }}
+                        className="text-xs font-medium text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200 underline decoration-dotted underline-offset-2 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </div>
                 </form>
               )}
