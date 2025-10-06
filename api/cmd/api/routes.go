@@ -32,6 +32,11 @@ func (s *APIServer) Routes() *chi.Mux {
 
 	r.Route("/profile", func(r chi.Router) {
 		r.Get("/picture/{userId}", makeHTTPHandleFunc(s.getProfilePictureHandler))
+		r.Get("/username/availability", makeHTTPHandleFunc(s.usernameAvailabilityHandler))
+		r.Group(func(r chi.Router) {
+			r.Use(s.AuthTokenMiddleware)
+			r.Post("/username/update", makeHTTPHandleFunc(s.updateUserNameHandler))
+		})
 		r.Group(func(r chi.Router) {
 			r.Use(s.AuthTokenMiddleware)
 			r.Get("/", makeHTTPHandleFunc(s.getUserProfileHandler))

@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/gofrs/uuid"
@@ -19,13 +18,19 @@ type UpdateProfilePictureRequest struct {
 	ProfilePictureURL *string `json:"profilePictureUrl"`
 }
 
+type UpdateUserNameRequest struct {
+	UserName string `json:"username"`
+}
+
 type UserProfileResponse struct {
 	ID                string  `json:"id"`
+	UserName          string  `json:"username"`
 	Name              string  `json:"name"`
 	Email             string  `json:"email"`
 	IsAdmin           bool    `json:"isAdmin"`
 	ProfilePictureURL *string `json:"profilePictureUrl"`
 	CreatedAt         string  `json:"createdAt"`
+	UpdatedAt         string  `json:"updatedAt"`
 }
 
 func (s *APIServer) getUserProfileHandler(w http.ResponseWriter, r *http.Request) error {
@@ -33,11 +38,13 @@ func (s *APIServer) getUserProfileHandler(w http.ResponseWriter, r *http.Request
 
 	response := UserProfileResponse{
 		ID:                user.ID,
+		UserName:          user.UserName,
 		Name:              user.Name,
 		Email:             user.Email,
 		IsAdmin:           user.IsAdmin,
 		ProfilePictureURL: user.ProfilePictureURL,
-		CreatedAt:         user.CreatedAt.Format(time.RFC3339),
+		CreatedAt:         user.CreatedAt,
+		UpdatedAt:         user.UpdatedAt,
 	}
 
 	return u.WriteJSON(w, http.StatusOK, response)
@@ -51,9 +58,9 @@ func (s *APIServer) getProfilePictureHandler(w http.ResponseWriter, r *http.Requ
 
 	user, err := s.Store.Users.GetByID(userId)
 	if err != nil {
-		return fmt.Errorf("failed to get user with id: %s", userId)
+		return fmt.Errorf("failed to get user with id: %s, err: %s", userId, err)
 	}
-	
+
 	response := struct {
 		ProfilePictureURL *string `json:"profilePictureUrl"`
 	}{
@@ -62,8 +69,8 @@ func (s *APIServer) getProfilePictureHandler(w http.ResponseWriter, r *http.Requ
 
 	if user.ProfilePictureURL == nil {
 		response.ProfilePictureURL = nil
-	}	
-	
+	}
+
 	return u.WriteJSON(w, http.StatusOK, response)
 }
 
@@ -86,11 +93,55 @@ func (s *APIServer) updateProfilePictureHandler(w http.ResponseWriter, r *http.R
 
 	response := UserProfileResponse{
 		ID:                updatedUser.ID,
+		UserName:          updatedUser.UserName,
 		Name:              updatedUser.Name,
 		Email:             updatedUser.Email,
 		IsAdmin:           updatedUser.IsAdmin,
 		ProfilePictureURL: updatedUser.ProfilePictureURL,
-		CreatedAt:         updatedUser.CreatedAt.Format(time.RFC3339),
+		CreatedAt:         updatedUser.CreatedAt,
+		UpdatedAt:         updatedUser.UpdatedAt,
+	}
+
+	return u.WriteJSON(w, http.StatusOK, response)
+}
+
+func (s *APIServer) updateUserNameHandler(w http.ResponseWriter, r *http.Request) error {
+	user := r.Context().Value(userCtx).(*store.User)
+
+	var req UpdateUserNameRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return fmt.Errorf("failed to decode request body: %w", err)
+	}
+
+	sanitized, err := utils.SanitizeAndValidateUsername(req.UserName)
+	if err != nil {
+		return fmt.Errorf("invalid username: %w", err)
+	}
+	if sanitized == "" {
+		return fmt.Errorf("username cannot be empty")
+	}
+	if sanitized == user.UserName {
+		return fmt.Errorf("username is unchanged")
+	}
+
+	if err := s.Store.Users.UpdateUserName(user.ID, sanitized); err != nil {
+		return fmt.Errorf("failed to update username: %w", err)
+	}
+
+	updatedUser, err := s.Store.Users.GetByID(user.ID)
+	if err != nil {
+		return fmt.Errorf("failed to get updated user: %w", err)
+	}
+
+	response := UserProfileResponse{
+		ID:                updatedUser.ID,
+		UserName:          updatedUser.UserName,
+		Name:              updatedUser.Name,
+		Email:             updatedUser.Email,
+		IsAdmin:           updatedUser.IsAdmin,
+		ProfilePictureURL: updatedUser.ProfilePictureURL,
+		CreatedAt:         updatedUser.CreatedAt,
+		UpdatedAt:         updatedUser.UpdatedAt,
 	}
 
 	return u.WriteJSON(w, http.StatusOK, response)
@@ -121,12 +172,12 @@ func (s *APIServer) uploadProfilePictureHandler(w http.ResponseWriter, r *http.R
 	if !strings.HasPrefix(contentType, "image/") {
 		return fmt.Errorf("file must be an image. Got: %s", contentType)
 	}
-	
+
 	uuid, err := uuid.NewV4()
 	if err != nil {
 		return fmt.Errorf("failed to create a new uuid")
 	}
-	
+
 	key := fmt.Sprintf("profile-pictures/%s%s", uuid, utils.ConvertFileType(contentType))
 
 	if err := s.R2Storage.UploadFile(key, data, contentType); err != nil {
@@ -187,4 +238,30 @@ func extractKeyFromURL(url string) string {
 		return strings.Join(keyParts, "/")
 	}
 	return ""
+}
+
+func (s *APIServer) usernameAvailabilityHandler(w http.ResponseWriter, r *http.Request) error {
+	raw := r.URL.Query().Get("username")
+	if raw == "" {
+		return fmt.Errorf("username is required")
+	}
+
+	sanitized := utils.SanitizeUsername(raw)
+	if sanitized == "" {
+		return fmt.Errorf("invalid username")
+	}
+
+	if err := utils.ValidateUsername(sanitized); err != nil {
+		return fmt.Errorf("invalid username: %s", err.Error())
+	}
+
+	exists, err := s.Store.Users.UsernameExists(sanitized)
+	if err != nil {
+		return fmt.Errorf("failed to check availability: %w", err)
+	}
+
+	return u.WriteJSON(w, http.StatusOK, map[string]interface{}{
+		"username":  sanitized,
+		"available": !exists,
+	})
 }

@@ -1,6 +1,7 @@
 export interface UserProfile {
   id: string;
   name: string;
+  username: string;
   email: string;
   isAdmin: boolean;
   profilePictureUrl?: string;
@@ -20,6 +21,10 @@ export interface UploadProfilePictureResponse {
   message: string;
 }
 
+export interface UpdateUsernameRequest {
+  username: string;
+}
+
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 export const profileApi = {
@@ -36,7 +41,9 @@ export const profileApi = {
     return response.json();
   },
 
-  getUserProfilePicture: async (userId: string): Promise<UserProfilePicture> => {
+  getUserProfilePicture: async (
+    userId: string,
+  ): Promise<UserProfilePicture> => {
     const response = await fetch(
       `${API_BASE_URL}/v1/profile/picture/${userId}`,
     );
@@ -64,6 +71,24 @@ export const profileApi = {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.Error || "Failed to update profile picture");
+    }
+
+    return response.json();
+  },
+
+  updateUsername: async (username: string): Promise<UserProfile> => {
+    const response = await fetch(`${API_BASE_URL}/v1/profile/username/update`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.Error || "Failed to update username");
     }
 
     return response.json();
@@ -101,5 +126,23 @@ export const profileApi = {
     }
 
     return response.json();
+  },
+
+  checkUsernameAvailability: async (
+    username: string,
+  ): Promise<{ username: string; available: boolean }> => {
+    const response = await fetch(
+      `${API_BASE_URL}/v1/profile/username/availability?username=${encodeURIComponent(
+        username,
+      )}`,
+    );
+    const data = await response.json();
+    if (!response.ok) {
+      const message =
+        (data && (data.Error || data.error)) ||
+        "Failed to check username availability";
+      throw new Error(message);
+    }
+    return data;
   },
 };

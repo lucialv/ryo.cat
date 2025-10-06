@@ -12,6 +12,8 @@ type Storage struct {
 		Create(*User) error
 		GetBySub(sub string) (*User, error)
 		GetByID(userID string) (*User, error)
+		UsernameExists(username string) (bool, error)
+		UpdateUserName(userID, userName string) error
 		UpdateProfilePicture(userID string, profilePictureURL *string) error
 	}
 	Posts interface {

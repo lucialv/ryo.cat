@@ -14,6 +14,7 @@ import (
 type JWTClaims struct {
 	ID         string `json:"id"`
 	Sub        string `json:"sub"`
+	UserName   string `json:"username"`
 	Name       string `json:"name"`
 	Email      string `json:"email"`
 	IsAdmin    bool   `json:"isAdmin"`
@@ -35,6 +36,7 @@ func (a *JWTAuthenticator) GenerateToken(jwtClaims JWTClaims) (string, error) {
 	secret := []byte(env.GetString("JWT_SECRET", ""))
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"id":          jwtClaims.Sub,
+		"username":    jwtClaims.UserName,
 		"name":        jwtClaims.Name,
 		"email":       jwtClaims.Email,
 		"profile_img": jwtClaims.ProfileImg,

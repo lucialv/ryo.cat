@@ -1,11 +1,25 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
   useProfile,
   useUploadProfilePicture,
   useDeleteProfilePicture,
+  useUpdateUsername,
+  useUsernameAvailability,
+  sanitizeUsername,
+  finalizeUsername,
 } from "@/hooks/useProfile";
-import { User, Camera, Trash2, Upload, AlertCircle, Check } from "lucide-react";
+import {
+  User,
+  Camera,
+  Trash2,
+  Upload,
+  AlertCircle,
+  Check,
+  Pencil,
+  X,
+} from "lucide-react";
+import { z } from "zod";
 
 const Settings: React.FC = () => {
   const { user } = useAuth();
@@ -20,6 +34,80 @@ const Settings: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const updateUsername = useUpdateUsername();
+  const [usernameInput, setUsernameInput] = useState<string>("");
+  const [usernameError, setUsernameError] = useState<string | null>(null);
+  const [usernameSuccess, setUsernameSuccess] = useState<string | null>(null);
+  const [editingUsername, setEditingUsername] = useState(false);
+  const {
+    sanitized: availabilitySanitized,
+    available: usernameAvailable,
+    error: availabilityError,
+    loading: availabilityLoading,
+  } = useUsernameAvailability(usernameInput, editingUsername);
+
+  useEffect(() => {
+    if (profile?.username || user?.username) {
+      setUsernameInput(profile?.username || user?.username || "");
+    }
+  }, [profile?.username, user?.username]);
+
+  const usernameSchema = z
+    .string()
+    .min(3, "Username must be at least 3 characters")
+    .max(15, "Username must be at most 15 characters")
+    .regex(
+      /^[a-z0-9._-]+$/,
+      "Only lowercase letters, numbers, or . _ - allowed",
+    );
+
+  const handleUsernameSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setUsernameError(null);
+    setUsernameSuccess(null);
+
+    const sanitized = finalizeUsername(usernameInput);
+    if (sanitized !== availabilitySanitized) {
+      setUsernameError("Invalid username");
+      return;
+    }
+
+    const result = usernameSchema.safeParse(sanitized);
+    if (!result.success) {
+      setUsernameError(result.error.issues[0]?.message || "Invalid username");
+      return;
+    }
+
+    if (sanitized === (profile?.username || user?.username)) {
+      return;
+    }
+
+    if (availabilityError) {
+      setUsernameError(availabilityError);
+      return;
+    }
+
+    if (usernameAvailable === false) {
+      setUsernameError("Already taken");
+      return;
+    }
+
+    updateUsername.mutate(sanitized, {
+      onSuccess: () => {
+        setUsernameSuccess("Username updated");
+        setEditingUsername(false);
+        setTimeout(() => setUsernameSuccess(null), 2500);
+      },
+      onError: (err: unknown) => {
+        const msg =
+          err instanceof Error
+            ? err.message
+            : "Failed to update username. Try again.";
+        setUsernameError(msg);
+      },
+    });
+  };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -115,6 +203,13 @@ const Settings: React.FC = () => {
   }
 
   const currentProfilePicture = profile?.profilePictureUrl || user?.profileImg;
+  const rawSanitized = sanitizeUsername(usernameInput);
+  const edgeSeparator = /^[._-]|[._-]$/.test(rawSanitized);
+  const isUnchangedUsername =
+    editingUsername &&
+    !edgeSeparator &&
+    finalizeUsername(usernameInput) ===
+      (profile?.username || user?.username || "");
 
   return (
     <div className="min-h-screen pt-[73px] px-4">
@@ -158,6 +253,11 @@ const Settings: React.FC = () => {
 
               <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2 text-center">
                 {profile?.name || user?.name}
+                {(profile?.username || user?.username) && (
+                  <span className="block text-xs text-neutral-400 dark:text-neutral-500">
+                    @{profile?.username || user?.username}
+                  </span>
+                )}
               </p>
             </div>
 
@@ -253,6 +353,163 @@ const Settings: React.FC = () => {
               <p className="text-neutral-900 dark:text-white">
                 {profile?.name || user?.name}
               </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                Username
+              </label>
+              {!editingUsername && (
+                <div className="flex items-center gap-2">
+                  <p className="text-neutral-900 dark:text-white">
+                    @{profile?.username || user?.username}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingUsername(true);
+                      setUsernameInput(
+                        profile?.username || user?.username || "",
+                      );
+                      setUsernameError(null);
+                      setUsernameSuccess(null);
+                    }}
+                    className="p-1 rounded hover:bg-neutral-200 dark:hover:bg-neutral-600 text-neutral-600 dark:text-neutral-300"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                  {usernameSuccess && (
+                    <p className="text-xs text-green-600 flex items-center gap-1">
+                      <Check className="h-3 w-3" /> {usernameSuccess}
+                    </p>
+                  )}
+                </div>
+              )}
+              {editingUsername && (
+                <form onSubmit={handleUsernameSubmit} className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-neutral-500 dark:text-neutral-400">
+                      @
+                    </span>
+                    <input
+                      type="text"
+                      value={usernameInput}
+                      onChange={(e) => {
+                        const sanitized = sanitizeUsername(e.target.value);
+                        setUsernameInput(sanitized);
+                        setUsernameError(null);
+                        setUsernameSuccess(null);
+                      }}
+                      maxLength={15}
+                      className="flex-1 bg-white/60 dark:bg-neutral-700/60 border border-neutral-300 dark:border-neutral-600 rounded-md px-3 py-1.5 text-sm text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-400 dark:focus:ring-purple-600"
+                      placeholder="username"
+                      autoFocus
+                      inputMode="text"
+                      autoComplete="off"
+                      spellCheck={false}
+                    />
+                    <span
+                      className="text-xs text-neutral-400 dark:text-neutral-500 tabular-nums select-none"
+                      aria-live="polite"
+                    >
+                      {usernameInput.length}/15
+                    </span>
+                    <button
+                      type="submit"
+                      disabled={
+                        updateUsername.isPending ||
+                        availabilityLoading ||
+                        usernameError !== null ||
+                        availabilityError !== null ||
+                        usernameAvailable === false ||
+                        edgeSeparator ||
+                        finalizeUsername(usernameInput) ===
+                          (profile?.username || user?.username)
+                      }
+                      className="px-3 py-1.5 text-sm rounded-md bg-purple-500 text-white font-medium hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {updateUsername.isPending ? "Saving..." : "Save"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingUsername(false);
+                        setUsernameError(null);
+                        setUsernameSuccess(null);
+                        setUsernameInput(
+                          profile?.username || user?.username || "",
+                        );
+                      }}
+                      className="px-2 py-1.5 text-sm rounded-md bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-300 dark:hover:bg-neutral-600"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    {(() => {
+                      if (usernameError) {
+                        return (
+                          <p className="text-xs text-red-500 flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3" /> {usernameError}
+                          </p>
+                        );
+                      }
+                      if (availabilityError) {
+                        return (
+                          <p className="text-xs text-red-500 flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3" />{" "}
+                            {availabilityError}
+                          </p>
+                        );
+                      }
+                      if (edgeSeparator) {
+                        return (
+                          <p className="text-xs text-red-500 flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3" /> Cannot start or
+                            end with . _ -
+                          </p>
+                        );
+                      }
+                      if (availabilityLoading) {
+                        return (
+                          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                            Checking...
+                          </p>
+                        );
+                      }
+                      if (isUnchangedUsername) {
+                        return (
+                          <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                            3–15 chars. a-z 0-9 . _ -
+                          </p>
+                        );
+                      }
+                      if (
+                        usernameAvailable === false &&
+                        finalizeUsername(usernameInput) !==
+                          (profile?.username || user?.username)
+                      ) {
+                        return (
+                          <p className="text-xs text-red-500 flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3" /> Already taken
+                          </p>
+                        );
+                      }
+                      if (
+                        usernameAvailable &&
+                        finalizeUsername(usernameInput) !==
+                          (profile?.username || user?.username)
+                      ) {
+                        return (
+                          <p className="text-xs text-green-600 flex items-center gap-1">
+                            <Check className="h-3 w-3" /> Available
+                          </p>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
+                </form>
+              )}
             </div>
 
             <div>

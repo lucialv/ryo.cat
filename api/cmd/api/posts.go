@@ -43,6 +43,7 @@ type PostResponse struct {
 
 type UserResponse struct {
 	ID                string `json:"id"`
+	UserName          string `json:"username"`
 	Name              string `json:"name"`
 	IsAdmin           bool   `json:"isAdmin"`
 	ProfilePictureURL string `json:"profilePictureUrl,omitempty"`
@@ -95,13 +96,13 @@ func (s *APIServer) createPostHandler(w http.ResponseWriter, r *http.Request) er
 			if !exists {
 				return fmt.Errorf("media file not found: %s", m.FileKey)
 			}
-			
+
 			fileInfo, err := s.R2Storage.GetFileInfo(m.FileKey)
 			if err != nil {
 				return fmt.Errorf("failed to check media info: %w", err)
 			}
-						
-			mediaURL:= fmt.Sprintf("https://cdn.ryo.cat/%s", fileInfo.Key)
+
+			mediaURL := fmt.Sprintf("https://cdn.ryo.cat/%s", fileInfo.Key)
 
 			postMedia := store.NewPostMedia(
 				post.ID,
@@ -382,9 +383,9 @@ func (s *APIServer) uploadPostMediaHandler(w http.ResponseWriter, r *http.Reques
 	if err != nil {
 		return fmt.Errorf("failed to create a new uuid")
 	}
-	
+
 	key := fmt.Sprintf("posts/media/%s%s", uuid, utils.ConvertFileType(contentType))
-	
+
 	if err := s.R2Storage.UploadFile(key, data, contentType); err != nil {
 		return fmt.Errorf("failed to upload media to R2: %w", err)
 	}
@@ -463,6 +464,7 @@ func convertPostToResponse(post *store.Post) PostResponse {
 
 		response.User = &UserResponse{
 			ID:                post.User.ID,
+			UserName:          post.User.UserName,
 			Name:              post.User.Name,
 			IsAdmin:           post.User.IsAdmin,
 			ProfilePictureURL: profilePictureURL,

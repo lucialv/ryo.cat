@@ -96,7 +96,7 @@ func (s *PostStore) getPostByIDWithUserContext(postID, currentUserID string) (*P
 func (s *PostStore) getPostByIDWithLikes(postID, currentUserID string) (*Post, error) {
 	const postQuery = `
 		SELECT p.id, p.user_id, p.body, p.created_at, p.updated_at,
-		       u.id, u.name, u.email, u.is_admin, u.profile_picture_url,
+		       u.id, u.username, u.name, u.email, u.is_admin, u.profile_picture_url,
 		       COALESCE(like_counts.count, 0) as like_count,
 		       CASE WHEN user_likes.user_id IS NOT NULL THEN 1 ELSE 0 END as is_liked_by_me
 		FROM posts p
@@ -120,6 +120,7 @@ func (s *PostStore) getPostByIDWithLikes(postID, currentUserID string) (*Post, e
 		&post.CreatedAt,
 		&post.UpdatedAt,
 		&user.ID,
+		&user.UserName,
 		&user.Name,
 		&user.Email,
 		&user.IsAdmin,
@@ -148,7 +149,7 @@ func (s *PostStore) getPostByIDWithLikes(postID, currentUserID string) (*Post, e
 func (s *PostStore) getPostByIDBasic(postID string) (*Post, error) {
 	const postQuery = `
 		SELECT p.id, p.user_id, p.body, p.created_at, p.updated_at,
-		       u.id, u.name, u.email, u.is_admin, u.profile_picture_url
+		       u.id, u.username, u.name, u.email, u.is_admin, u.profile_picture_url
 		FROM posts p
 		JOIN users u ON p.user_id = u.id
 		WHERE p.id = ?
@@ -164,6 +165,7 @@ func (s *PostStore) getPostByIDBasic(postID string) (*Post, error) {
 		&post.CreatedAt,
 		&post.UpdatedAt,
 		&user.ID,
+		&user.UserName,
 		&user.Name,
 		&user.Email,
 		&user.IsAdmin,
@@ -208,7 +210,7 @@ func (s *PostStore) getAllPostsWithUserContext(limit, offset int, currentUserID 
 func (s *PostStore) getAllPostsWithLikes(limit, offset int, currentUserID string) ([]Post, error) {
 	const q = `
 		SELECT p.id, p.user_id, p.body, p.created_at, p.updated_at,
-		       u.id, u.name, u.email, u.is_admin, u.profile_picture_url,
+		       u.id, u.username, u.name, u.email, u.is_admin, u.profile_picture_url,
 		       COALESCE(like_counts.count, 0) as like_count,
 		       CASE WHEN user_likes.user_id IS NOT NULL THEN 1 ELSE 0 END as is_liked_by_me
 		FROM posts p
@@ -241,6 +243,7 @@ func (s *PostStore) getAllPostsWithLikes(limit, offset int, currentUserID string
 			&post.CreatedAt,
 			&post.UpdatedAt,
 			&user.ID,
+			&user.UserName,
 			&user.Name,
 			&user.Email,
 			&user.IsAdmin,
@@ -269,7 +272,7 @@ func (s *PostStore) getAllPostsWithLikes(limit, offset int, currentUserID string
 func (s *PostStore) getAllPostsBasic(limit, offset int) ([]Post, error) {
 	const q = `
 		SELECT p.id, p.user_id, p.body, p.created_at, p.updated_at,
-		       u.id, u.name, u.email, u.is_admin, u.profile_picture_url
+		       u.id, u.username, u.name, u.email, u.is_admin, u.profile_picture_url
 		FROM posts p
 		JOIN users u ON p.user_id = u.id
 		ORDER BY p.created_at DESC
@@ -294,6 +297,7 @@ func (s *PostStore) getAllPostsBasic(limit, offset int) ([]Post, error) {
 			&post.CreatedAt,
 			&post.UpdatedAt,
 			&user.ID,
+			&user.UserName,
 			&user.Name,
 			&user.Email,
 			&user.IsAdmin,
@@ -338,7 +342,7 @@ func (s *PostStore) getPostsByUserIDWithUserContext(userID string, limit, offset
 func (s *PostStore) getPostsByUserIDWithLikes(userID string, limit, offset int, currentUserID string) ([]Post, error) {
 	const q = `
 		SELECT p.id, p.user_id, p.body, p.created_at, p.updated_at,
-		       u.id, u.name, u.email, u.is_admin, u.profile_picture_url,
+		       u.id, u.username, u.name, u.email, u.is_admin, u.profile_picture_url,
 		       COALESCE(like_counts.count, 0) as like_count,
 		       CASE WHEN user_likes.user_id IS NOT NULL THEN 1 ELSE 0 END as is_liked_by_me
 		FROM posts p
@@ -372,6 +376,7 @@ func (s *PostStore) getPostsByUserIDWithLikes(userID string, limit, offset int, 
 			&post.CreatedAt,
 			&post.UpdatedAt,
 			&user.ID,
+			&user.UserName,
 			&user.Name,
 			&user.Email,
 			&user.IsAdmin,
@@ -400,7 +405,7 @@ func (s *PostStore) getPostsByUserIDWithLikes(userID string, limit, offset int, 
 func (s *PostStore) getPostsByUserIDBasic(userID string, limit, offset int) ([]Post, error) {
 	const q = `
 		SELECT p.id, p.user_id, p.body, p.created_at, p.updated_at,
-		       u.id, u.name, u.email, u.is_admin, u.profile_picture_url
+		       u.id, u.username, u.name, u.email, u.is_admin, u.profile_picture_url
 		FROM posts p
 		JOIN users u ON p.user_id = u.id
 		WHERE p.user_id = ?
@@ -426,6 +431,7 @@ func (s *PostStore) getPostsByUserIDBasic(userID string, limit, offset int) ([]P
 			&post.CreatedAt,
 			&post.UpdatedAt,
 			&user.ID,
+			&user.UserName,
 			&user.Name,
 			&user.Email,
 			&user.IsAdmin,

@@ -7,6 +7,7 @@ export interface Post {
   user: {
     id: string;
     name: string;
+    username: string;
     isAdmin: boolean;
     profilePictureUrl?: string;
   };

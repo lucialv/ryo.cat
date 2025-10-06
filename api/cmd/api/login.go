@@ -81,26 +81,37 @@ func (s *APIServer) loginHandler(w http.ResponseWriter, r *http.Request) error {
 			return err
 		}
 
+		username, err := u.SanitizeAndValidateUsername(name)
+		if err != nil || username == "" {
+			suffix := sub
+			if len(suffix) > 8 {
+				suffix = suffix[:8]
+			}
+			username = fmt.Sprintf("user-%s", suffix)
+		}
+
 		if user == nil {
 			log.Printf("User not found, creating new user")
 			user = store.NewUser(
 				sub,
+				emailVerified,
+				username,
 				name,
 				email,
-				emailVerified,
 			)
 			if err := s.Store.Users.Create(user); err != nil {
 				log.Printf("Error creating user in database: %v", err)
 				return err
 			}
-			log.Printf("New user created: %s (%s)", user.Name, user.ID)
+			log.Printf("New user created: %s (%s)", user.UserName, user.ID)
 		} else {
-			log.Printf("User found: %s (%s)", user.Name, user.ID)
+			log.Printf("User found: %s (%s)", user.UserName, user.ID)
 		}
 
 		jwtClaims := auth.JWTClaims{
 			ID:         user.ID,
 			Sub:        sub,
+			UserName:   username,
 			Name:       name,
 			Email:      email,
 			IsAdmin:    user.IsAdmin,

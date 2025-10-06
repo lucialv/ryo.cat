@@ -280,6 +280,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
               )}
             </p>
             <p className="text-sm text-neutral-500 dark:text-neutral-400">
+              {post.user.username ? `@${post.user.username} · ` : "no¿"}
               {formatDate(post.createdAt)}
             </p>
           </div>
